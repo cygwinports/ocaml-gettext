@@ -1,0 +1,43 @@
+inherit ocaml
+
+NAME="ocaml-gettext"
+VERSION=0.3.7
+RELEASE=1
+CATEGORY="Libs"
+SUMMARY="OCaml gettext bindings"
+DESCRIPTION="This OCaml library is a wrapper around gettext."
+HOMEPAGE="https://github.com/gildor478/ocaml-gettext"
+SRC_URI="${HOMEPAGE}/archive/${VERSION}/ocaml-gettext-${VERSION}.tar.gz"
+
+DIFF_EXCLUDES="_build"
+
+src_compile() {
+	cd ${S}
+	cygautoreconf
+	lndirs
+	cd ${B}
+	cygconf --with-stub-ldflags=-lintl \
+		--with-docbook-stylesheet=/usr/share/sgml/docbook/xsl-stylesheets
+	cygmake -j1
+}
+
+src_install() {
+	cd ${S}
+	# make install in the package is messed up completely.  Install
+	# by hand instead.
+	export DESTDIR=${D}
+	export OCAMLFIND_DESTDIR=${D}${OCAML_LIBDIR}
+	dodir ${OCAML_STUBDIR}
+
+	# Remove *.o files - these shouldn't be distributed.
+	find _build -name '*.o' -exec rm {} \;
+
+	${OCAMLFIND} install gettext _build/lib/gettext/*
+	${OCAMLFIND} install gettext-stub _build/lib/gettext-stub/*
+	${OCAMLFIND} install gettext-camomile _build/lib/gettext-camomile/*
+
+	dobin _build/bin/ocaml-gettext.exe
+	dobin _build/bin/ocaml-xgettext
+	doman _build/share/man/man*/*
+	cp -a _build/share/locale ${D}/usr/share
+}
